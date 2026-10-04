@@ -1,0 +1,24 @@
+{% extends "auth/_layout.html" %}
+{% block title %}Sign up{% endblock %}
+{% block form %}
+<h1>Create your account</h1>
+<p class="muted" style="margin:4px 0 22px">It takes less than a minute.</p>
+<form method="post" id="signup-form">
+  <div class="field"><label for="full_name">Full name</label>
+    <input type="text" id="full_name" name="full_name" value="{{ form.full_name }}"></div>
+  <div class="field"><label for="username">Username</label>
+    <input type="text" id="username" name="username" required value="{{ form.username }}">
+    <div class="hint">3–30 characters: letters, numbers, _ or .</div></div>
+  <div class="field"><label for="email">Email</label>
+    <input type="email" id="email" name="email" required value="{{ form.email }}"></div>
+  <div class="form-row">
+    <div class="field"><label for="password">Password</label>
+      <input type="password" id="password" name="password" required></div>
+    <div class="field"><label for="confirm_password">Confirm</label>
+      <input type="password" id="confirm_password" name="confirm_password" required></div>
+  </div>
+  <div class="hint" style="margin:-6px 0 14px">At least 6 characters with a letter and a number.</div>
+  <button type="submit" class="btn btn-primary btn-block">Create account</button>
+</form>
+<p class="muted" style="margin-top:18px">Already have an account? <a href="{{ url_for('auth.login') }}">Log in</a></p>
+{% endblock %}

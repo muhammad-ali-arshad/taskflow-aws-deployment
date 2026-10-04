@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% from "macros.html" import avatar %}
+{% block title %}Projects{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Projects</h1><div class="sub">{{ projects|length }} {{ show|lower if show != 'all' else '' }} project{{ 's' if projects|length != 1 }}</div></div>
+  <a class="btn btn-primary" href="{{ url_for('projects.create_project') }}">+ New project</a>
+</div>
+<div class="tabs">
+  {% for s in ['Active', 'Archived', 'all'] %}
+  <a class="{% if show == s and request.args.get('scope') != 'all' %}active{% endif %}" href="{{ url_for('projects.list_projects', show=s) }}">{{ s|title }}</a>
+  {% endfor %}
+  {% if current_user.is_admin %}<a class="{% if request.args.get('scope') == 'all' %}active{% endif %}" href="{{ url_for('projects.list_projects', show='all', scope='all') }}">Every user's projects (admin)</a>{% endif %}
+</div>
+{% if projects %}
+<div class="grid grid-3">
+  {% for p in projects %}
+  <a class="card project-card" style="border-top-color:{{ p.color }}" href="{{ url_for('projects.view_project', project_id=p.id) }}">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <h2 style="margin:0">{{ p.name }}</h2>
+      {% if p.status == 'Archived' %}<span class="badge badge-muted">Archived</span>{% endif %}
+    </div>
+    <p>{{ (p.description or 'No description')|truncate(90) }}</p>
+    <div class="progress"><span style="width:{{ p.progress }}%;background:{{ p.color }}"></span></div>
+    <div class="project-meta"><span>{{ p.tasks|length }} tasks · {{ p.progress }}% done</span>
+      <span>{% if p.due_date %}Due {{ p.due_date|date('%d %b') }}{% endif %}</span></div>
+    <div class="avatars" style="margin-top:12px">{% for m in p.members[:5] %}{{ avatar(m.user, 'avatar-sm') }}{% endfor %}
+      {% if p.members|length > 5 %}<span class="avatar avatar-sm">+{{ p.members|length - 5 }}</span>{% endif %}</div>
+  </a>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card empty">No projects here yet. <a href="{{ url_for('projects.create_project') }}">Create your first project</a>.</div>
+{% endif %}
+{% endblock %}

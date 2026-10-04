@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Task Manager</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f0f2f5; margin: 0; }
+    nav { background: #2c3e50; color: #fff; padding: 14px 24px; display: flex; justify-content: space-between; }
+    nav a { color: #fff; text-decoration: none; margin-left: 14px; }
+    .container { max-width: 760px; margin: 30px auto; background: #fff; padding: 24px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,.1); }
+    input, textarea, select { width: 100%; padding: 9px; margin: 6px 0 12px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+    button, .btn { background: #3498db; color: #fff; border: none; padding: 8px 14px; border-radius: 4px; cursor: pointer; text-decoration: none; font-size: 14px; }
+    .btn-red { background: #e74c3c; }
+    .btn-green { background: #27ae60; }
+    table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+    th, td { padding: 10px; border-bottom: 1px solid #eee; text-align: left; }
+    .flash { background: #fff3cd; padding: 10px; border-radius: 4px; margin-bottom: 14px; }
+    .status-Done { color: #27ae60; font-weight: bold; }
+    .status-Pending { color: #e67e22; font-weight: bold; }
+    .status-In\ Progress { color: #3498db; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <nav>
+    <strong>📋 Task Manager</strong>
+    <div>
+      {% if username %}
+        Hi, {{ username }} <a href="{{ url_for('tasks') }}">Tasks</a> <a href="{{ url_for('logout') }}">Logout</a>
+      {% else %}
+        <a href="{{ url_for('login') }}">Login</a> <a href="{{ url_for('signup') }}">Sign up</a>
+      {% endif %}
+    </div>
+  </nav>
+  <div class="container">
+    {% for msg in get_flashed_messages() %}<div class="flash">{{ msg }}</div>{% endfor %}
+    {% block content %}{% endblock %}
+  </div>
+</body>
+</html>

@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Edit Task</h2>
+<form method="post">
+  <label>Title</label><input name="title" value="{{ task.title }}" required>
+  <label>Description</label><textarea name="description">{{ task.description }}</textarea>
+  <label>Status</label>
+  <select name="status">
+    {% for s in ['Pending', 'In Progress', 'Done'] %}
+    <option {% if task.status == s %}selected{% endif %}>{{ s }}</option>
+    {% endfor %}
+  </select>
+  <button type="submit">Save</button>
+  <a class="btn btn-red" href="{{ url_for('tasks') }}">Cancel</a>
+</form>
+{% endblock %}

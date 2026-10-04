@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit task' if task.id else 'New task' }}{% endblock %}
+{% block content %}
+<div class="page-head"><div>
+  <div class="small muted"><a href="{{ url_for('projects.view_project', project_id=project.id) }}">{{ project.name }}</a> /</div>
+  <h1>{{ 'Edit task' if task.id else 'New task' }}</h1></div></div>
+<div class="card" style="max-width:720px">
+  {% if projects %}
+  <form method="get" class="field" style="max-width:320px">
+    <label for="project_id">Project</label>
+    <select id="project_id" name="project_id" onchange="this.form.submit()">
+      {% for p in projects %}<option value="{{ p.id }}" {% if p.id == project.id %}selected{% endif %}>{{ p.name }}</option>{% endfor %}
+    </select>
+  </form>
+  {% endif %}
+  <form method="post" id="task-form">
+    <input type="hidden" name="project_id" value="{{ project.id }}">
+    <div class="field"><label for="title">Title</label>
+      <input type="text" id="title" name="title" value="{{ task.title or '' }}" required maxlength="200" autofocus></div>
+    <div class="field"><label for="description">Description</label>
+      <textarea id="description" name="description" placeholder="Add more details…">{{ task.description or '' }}</textarea></div>
+    <div class="form-row">
+      <div class="field"><label for="status">Status</label>
+        <select id="status" name="status">{% for s in STATUSES %}<option {% if task.status == s %}selected{% endif %}>{{ s }}</option>{% endfor %}</select></div>
+      <div class="field"><label for="priority">Priority</label>
+        <select id="priority" name="priority">{% for p in PRIORITIES %}<option {% if (task.priority or 'Medium') == p %}selected{% endif %}>{{ p }}</option>{% endfor %}</select></div>
+      <div class="field"><label for="assignee_id">Assignee</label>
+        <select id="assignee_id" name="assignee_id"><option value="">Unassigned</option>
+          {% for m in project.members %}<option value="{{ m.user_id }}" {% if task.assignee_id == m.user_id %}selected{% endif %}>{{ m.user.display_name }}</option>{% endfor %}</select></div>
+      <div class="field"><label for="due_date">Due date</label>
+        <input type="date" id="due_date" name="due_date" value="{{ task.due_date.isoformat() if task.due_date else '' }}"></div>
+    </div>
+    <div class="btn-group">
+      <button class="btn btn-primary">{{ 'Save changes' if task.id else 'Create task' }}</button>
+      <a class="btn" href="{{ url_for('tasks.view_task', task_id=task.id) if task.id else url_for('projects.view_project', project_id=project.id) }}">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

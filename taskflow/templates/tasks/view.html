@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% from "macros.html" import status_badge, priority_badge, avatar %}
+{% block title %}{{ task.title }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="small muted"><a href="{{ url_for('projects.view_project', project_id=task.project.id) }}">{{ task.project.name }}</a> / Task #{{ task.id }}</div>
+    <h1>{{ task.title }}</h1>
+  </div>
+  <div class="btn-group">
+    {% if can_edit %}<a class="btn" href="{{ url_for('tasks.edit_task', task_id=task.id) }}">Edit</a>{% endif %}
+    {% if task.project.can_manage(current_user) or task.created_by == current_user.id %}
+    <form class="inline" method="post" action="{{ url_for('tasks.delete_task', task_id=task.id) }}" data-confirm="Delete this task?">
+      <input type="hidden" name="next" value="project"><button class="btn btn-danger">Delete</button></form>
+    {% endif %}
+  </div>
+</div>
+
+<div class="grid grid-main">
+  <div>
+    <div class="card">
+      <h2>Description</h2>
+      <div class="desc">{{ task.description or 'No description provided.' }}</div>
+      <h3 style="margin-top:20px">Move to</h3>
+      <div class="btn-group">
+        {% for s in STATUSES if s != task.status %}
+        <form class="inline" method="post" action="{{ url_for('tasks.update_status', task_id=task.id) }}">
+          <input type="hidden" name="status" value="{{ s }}"><button class="btn btn-sm">{{ s }}</button></form>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="card" id="comments">
+      <h2>Comments ({{ task.comments|length }})</h2>
+      {% for c in task.comments %}
+      <div class="comment">
+        {{ avatar(c.author) }}
+        <div style="flex:1">
+          <b>{{ c.author.display_name }}</b> <span class="muted small">{{ c.created_at|ago }}</span>
+          <div class="body">{{ c.body }}</div>
+        </div>
+        {% if c.user_id == current_user.id or task.project.can_manage(current_user) %}
+        <form method="post" action="{{ url_for('tasks.delete_comment', comment_id=c.id) }}" data-confirm="Delete this comment?">
+          <button class="btn btn-sm btn-danger">Delete</button></form>
+        {% endif %}
+      </div>
+      {% else %}<p class="muted">No comments yet. Start the discussion.</p>{% endfor %}
+      <form method="post" action="{{ url_for('tasks.add_comment', task_id=task.id) }}" style="margin-top:14px">
+        <div class="field"><textarea name="body" placeholder="Write a comment…" required style="min-height:70px"></textarea></div>
+        <button class="btn btn-primary">Post comment</button>
+      </form>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Details</h2>
+    <dl class="detail-grid" style="margin:0">
+      <dt>Status</dt><dd>{{ status_badge(task.status) }}</dd>
+      <dt>Priority</dt><dd>{{ priority_badge(task.priority) }}</dd>
+      <dt>Assignee</dt><dd>{{ avatar(task.assignee, 'avatar-sm') }} {{ task.assignee.display_name if task.assignee else 'Unassigned' }}</dd>
+      <dt>Due date</dt><dd>{{ task.due_date|date }} {% if task.is_overdue %}<span class="badge badge-overdue">Overdue</span>{% endif %}</dd>
+      <dt>Project</dt><dd><span class="dot" style="background:{{ task.project.color }}"></span><a href="{{ url_for('projects.view_project', project_id=task.project.id) }}">{{ task.project.name }}</a></dd>
+      <dt>Created by</dt><dd>{{ task.creator.display_name if task.creator else '—' }}</dd>
+      <dt>Created</dt><dd>{{ task.created_at|date('%d %b %Y, %H:%M') }}</dd>
+      <dt>Last updated</dt><dd>{{ task.updated_at|ago }}</dd>
+      {% if task.completed_at %}<dt>Completed</dt><dd>{{ task.completed_at|date('%d %b %Y, %H:%M') }}</dd>{% endif %}
+    </dl>
+  </div>
+</div>
+{% endblock %}

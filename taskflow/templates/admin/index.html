@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% from "macros.html" import avatar %}
+{% block title %}Admin panel{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Admin panel</h1><div class="sub">Manage users and monitor the system.</div></div></div>
+<div class="stats">
+  <div class="stat"><div class="label">Users</div><div class="value">{{ overview.users }}</div></div>
+  <div class="stat"><div class="label">Active users</div><div class="value">{{ overview.active_users }}</div></div>
+  <div class="stat"><div class="label">Projects</div><div class="value">{{ overview.projects }}</div></div>
+  <div class="stat"><div class="label">Tasks</div><div class="value">{{ overview.tasks }}</div></div>
+  <div class="stat"><div class="label">Database</div><div class="value" style="font-size:18px;margin-top:10px">{{ overview.engine|upper }}</div></div>
+</div>
+<div class="grid grid-main">
+  <div>
+    <form class="filters" method="get"><input type="search" name="q" placeholder="Search users…" value="{{ q }}"><button class="btn">Search</button></form>
+    <div class="table-wrap"><table class="table">
+      <tr><th>User</th><th>Role</th><th>Status</th><th>Tasks</th><th>Joined</th><th>Actions</th></tr>
+      {% for u in users %}
+      <tr>
+        <td><div style="display:flex;gap:10px;align-items:center">{{ avatar(u) }}<div><b>{{ u.display_name }}</b><div class="muted small">@{{ u.username }} · {{ u.email }}</div></div></div></td>
+        <td><span class="badge {{ 'badge-admin' if u.is_admin else 'badge-muted' }}">{{ u.role|title }}</span></td>
+        <td>{% if u.is_active %}<span class="badge st-done">Active</span>{% else %}<span class="badge badge-overdue">Disabled</span>{% endif %}</td>
+        <td>{{ task_counts.get(u.id, 0) }}</td>
+        <td class="small muted">{{ u.created_at|date }}</td>
+        <td>{% if u.id != current_user.id %}
+          <div class="btn-group">
+            <form class="inline" method="post" action="{{ url_for('admin.change_role', user_id=u.id) }}">
+              <input type="hidden" name="role" value="{{ 'member' if u.is_admin else 'admin' }}">
+              <button class="btn btn-sm">{{ 'Make member' if u.is_admin else 'Make admin' }}</button></form>
+            <form class="inline" method="post" action="{{ url_for('admin.toggle_active', user_id=u.id) }}">
+              <button class="btn btn-sm">{{ 'Disable' if u.is_active else 'Enable' }}</button></form>
+            <form class="inline" method="post" action="{{ url_for('admin.delete_user', user_id=u.id) }}" data-confirm="Delete user {{ u.username }}? Their projects will be transferred to you.">
+              <button class="btn btn-sm btn-danger">Delete</button></form>
+          </div>{% else %}<span class="muted small">You</span>{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </table></div>
+  </div>
+  <div class="card">
+    <h2>System activity</h2>
+    <ul class="list activity">{% for a in logs %}
+      <li>{{ avatar(a.user, 'avatar-sm') }}<div class="grow"><b>{{ a.user.display_name if a.user else 'System' }}</b> {{ a.action }}</div><span class="when">{{ a.created_at|ago }}</span></li>
+    {% else %}<li class="muted">No activity yet.</li>{% endfor %}</ul>
+    <p class="small muted" style="margin-top:12px">Health check: <a href="{{ url_for('health') }}">/health</a></p>
+  </div>
+</div>
+{% endblock %}

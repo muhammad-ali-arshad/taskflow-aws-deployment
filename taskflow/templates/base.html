@@ -1,0 +1,47 @@
+{% from "macros.html" import icon %}<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}TaskFlow{% endblock %} · TaskFlow</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+{% if current_user %}
+<div class="layout">
+  <aside class="sidebar">
+    <div class="brand"><div class="brand-mark">✓</div> TaskFlow</div>
+    {% set ep = request.endpoint or '' %}
+    <a class="nav-link {% if ep.startswith('dashboard') %}active{% endif %}" href="{{ url_for('dashboard.index') }}">{{ icon('home') }} Dashboard</a>
+    <a class="nav-link {% if ep.startswith('projects') %}active{% endif %}" href="{{ url_for('projects.list_projects') }}">{{ icon('folder') }} Projects</a>
+    <a class="nav-link {% if ep.startswith('tasks') and request.args.get('assignee') != 'me' %}active{% endif %}" href="{{ url_for('tasks.list_tasks') }}">{{ icon('list') }} All tasks</a>
+    <a class="nav-link {% if ep.startswith('tasks') and request.args.get('assignee') == 'me' %}active{% endif %}" href="{{ url_for('tasks.list_tasks', assignee='me', status='open') }}">{{ icon('user') }} My tasks</a>
+    <div class="nav-section">Account</div>
+    <a class="nav-link {% if ep == 'auth.profile' %}active{% endif %}" href="{{ url_for('auth.profile') }}">{{ icon('settings') }} Profile</a>
+    {% if current_user.is_admin %}
+    <a class="nav-link {% if ep.startswith('admin') %}active{% endif %}" href="{{ url_for('admin.index') }}">{{ icon('shield') }} Admin panel</a>
+    {% endif %}
+    <div class="sidebar-user">
+      <span class="avatar">{{ current_user.initials }}</span>
+      <div class="who">
+        <div>{{ current_user.display_name }}</div>
+        <a href="{{ url_for('auth.logout') }}">Log out</a>
+      </div>
+    </div>
+  </aside>
+  <main class="main">
+    <button class="btn menu-toggle" data-toggle-sidebar>☰ Menu</button>
+    {% include "_flashes.html" %}
+    {% block content %}{% endblock %}
+  </main>
+</div>
+{% else %}
+  {% block public %}
+  <main class="main" style="max-width:900px;margin:auto">{% include "_flashes.html" %}{{ self.content() }}</main>
+  {% endblock %}
+{% endif %}
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

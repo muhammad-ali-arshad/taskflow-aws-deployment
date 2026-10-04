@@ -1,0 +1,15 @@
+# systemd unit - copy to /etc/systemd/system/taskflow.service
+[Unit]
+Description=TaskFlow Flask app (gunicorn)
+After=network.target mysql.service
+
+[Service]
+User=ubuntu
+Group=www-data
+WorkingDirectory=/home/ubuntu/taskflow
+EnvironmentFile=/home/ubuntu/taskflow/.env
+ExecStart=/home/ubuntu/taskflow/venv/bin/gunicorn --workers 3 --bind 127.0.0.1:8000 application:application
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

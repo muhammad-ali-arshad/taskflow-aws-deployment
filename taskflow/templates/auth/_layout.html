@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block public %}
+<div class="auth-wrap">
+  <div class="auth-side">
+    <div class="brand" style="padding:0"><div class="brand-mark" style="background:#fff;color:#4f46e5">✓</div> TaskFlow</div>
+    <div>
+      <h2>Plan projects, assign work and ship on time.</h2>
+      <p style="opacity:.85">A collaborative project &amp; task manager for teams.</p>
+      <ul>
+        <li>Projects with team members &amp; roles</li>
+        <li>Kanban board with drag &amp; drop</li>
+        <li>Priorities, due dates, comments</li>
+        <li>Dashboard, reports &amp; CSV export</li>
+      </ul>
+    </div>
+    <div class="small" style="opacity:.7">DevOps for Cloud Computing · AWS deployment project</div>
+  </div>
+  <div class="auth-form"><div class="box">
+    {% include "_flashes.html" %}
+    {% block form %}{% endblock %}
+  </div></div>
+</div>
+{% endblock %}

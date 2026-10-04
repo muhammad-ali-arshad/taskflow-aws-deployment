@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% from "macros.html" import status_badge, priority_badge, avatar, due %}
+{% block title %}{{ project.name }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="small muted"><a href="{{ url_for('projects.list_projects') }}">Projects</a> /</div>
+    <h1 style="display:flex;align-items:center;gap:10px"><span class="dot" style="background:{{ project.color }};width:14px;height:14px"></span>{{ project.name }}
+      {% if project.status == 'Archived' %}<span class="badge badge-muted">Archived</span>{% endif %}</h1>
+    <div class="sub">{{ project.description or 'No description' }}</div>
+  </div>
+  <div class="btn-group">
+    {% if project.status == 'Active' %}<a class="btn btn-primary" href="{{ url_for('tasks.create_task', project_id=project.id) }}">+ Add task</a>{% endif %}
+    {% if can_manage %}
+      <a class="btn" href="{{ url_for('projects.edit_project', project_id=project.id) }}">Edit</a>
+      <form class="inline" method="post" action="{{ url_for('projects.toggle_archive', project_id=project.id) }}">
+        <button class="btn">{{ 'Restore' if project.status == 'Archived' else 'Archive' }}</button></form>
+      <form class="inline" method="post" action="{{ url_for('projects.delete_project', project_id=project.id) }}" data-confirm="Delete this project and ALL its tasks? This cannot be undone.">
+        <button class="btn btn-danger">Delete</button></form>
+    {% endif %}
+  </div>
+</div>
+
+<div class="stats" style="grid-template-columns:repeat(4,minmax(0,1fr))">
+  <div class="stat"><div class="label">Tasks</div><div class="value">{{ project.tasks|length }}</div></div>
+  <div class="stat"><div class="label">Done</div><div class="value green">{{ columns['Done']|length }}</div></div>
+  <div class="stat"><div class="label">Members</div><div class="value">{{ project.members|length }}</div></div>
+  <div class="stat"><div class="label">Progress · <span data-progress-label>{{ project.progress }}%</span></div>
+    <div class="progress" data-progress style="margin-top:14px"><span style="width:{{ project.progress }}%;background:{{ project.color }}"></span></div>
+    <div class="small muted" style="margin-top:6px">{% if project.due_date %}Target {{ project.due_date|date }}{% else %}No target date{% endif %}</div></div>
+</div>
+
+<div class="tabs">
+  <a class="{% if view == 'board' %}active{% endif %}" href="?view=board">Board</a>
+  <a class="{% if view == 'list' %}active{% endif %}" href="?view=list">List</a>
+  <a class="{% if view == 'team' %}active{% endif %}" href="?view=team">Team ({{ project.members|length }})</a>
+  <a class="{% if view == 'activity' %}active{% endif %}" href="?view=activity">Activity</a>
+</div>
+
+{% if view == 'board' %}
+<p class="muted small" style="margin-top:-6px">Drag cards between columns to change their status.</p>
+<div class="board">
+  {% for status, items in columns.items() %}
+  <div class="column" data-status="{{ status }}">
+    <div class="column-head">{{ status_badge(status) }}<span class="count">{{ items|length }}</span></div>
+    <div class="cards">
+      {% for t in items %}
+      <div class="kcard" draggable="true" data-id="{{ t.id }}">
+        <a href="{{ url_for('tasks.view_task', task_id=t.id) }}">{{ t.title }}</a>
+        <div class="meta"><span>{{ priority_badge(t.priority) }} {{ due(t) }}</span>{{ avatar(t.assignee, 'avatar-sm') }}</div>
+      </div>
+      {% endfor %}
+    </div>
+    {% if project.status == 'Active' %}<a class="add-in-col" href="{{ url_for('tasks.create_task', project_id=project.id, status=status) }}">+ Add task</a>{% endif %}
+  </div>
+  {% endfor %}
+</div>
+
+{% elif view == 'list' %}
+{% if project.tasks %}
+<div class="table-wrap"><table class="table">
+  <tr><th>Task</th><th>Status</th><th>Priority</th><th>Assignee</th><th>Due</th></tr>
+  {% for t in project.tasks %}
+  <tr><td><a class="task-title" href="{{ url_for('tasks.view_task', task_id=t.id) }}">{{ t.title }}</a></td>
+    <td>{{ status_badge(t.status) }}</td><td>{{ priority_badge(t.priority) }}</td>
+    <td>{{ t.assignee.display_name if t.assignee else '—' }}</td><td>{{ due(t) or '—' }}</td></tr>
+  {% endfor %}
+</table></div>
+{% else %}<div class="card empty">No tasks in this project yet.</div>{% endif %}
+
+{% elif view == 'team' %}
+<div class="grid grid-main">
+  <div class="table-wrap"><table class="table">
+    <tr><th>Member</th><th>Role</th><th>Open tasks</th><th>Joined</th>{% if can_manage %}<th></th>{% endif %}</tr>
+    {% for m in project.members %}
+    <tr>
+      <td><div style="display:flex;align-items:center;gap:10px">{{ avatar(m.user) }}<div><b>{{ m.user.display_name }}</b><div class="muted small">@{{ m.user.username }}</div></div></div></td>
+      <td><span class="badge {{ 'badge-admin' if m.role == 'owner' else 'badge-muted' }}">{{ m.role|title }}</span></td>
+      <td>{{ project.tasks|selectattr('assignee_id', 'equalto', m.user_id)|rejectattr('status', 'equalto', 'Done')|list|length }}</td>
+      <td class="muted small">{{ m.added_at|date }}</td>
+      {% if can_manage %}<td>{% if m.role != 'owner' %}
+        <form class="inline" method="post" action="{{ url_for('projects.remove_member', project_id=project.id, user_id=m.user_id) }}" data-confirm="Remove {{ m.user.username }} from this project?">
+          <button class="btn btn-sm btn-danger">Remove</button></form>{% endif %}</td>{% endif %}
+    </tr>
+    {% endfor %}
+  </table></div>
+  {% if can_manage %}
+  <div class="card">
+    <h2>Add member</h2>
+    {% if candidates %}
+    <form method="post" action="{{ url_for('projects.add_member', project_id=project.id) }}">
+      <div class="field"><label for="username">User</label>
+        <select id="username" name="username">{% for u in candidates %}<option value="{{ u.username }}">{{ u.display_name }} (@{{ u.username }})</option>{% endfor %}</select></div>
+      <button class="btn btn-primary">Add to project</button>
+    </form>
+    {% else %}<p class="muted">Every registered user is already a member.</p>{% endif %}
+  </div>
+  {% endif %}
+</div>
+
+{% else %}
+<div class="card">
+  {% if activity %}<ul class="list activity">{% for a in activity %}
+    <li>{{ avatar(a.user, 'avatar-sm') }}<div class="grow"><b>{{ a.user.display_name if a.user else 'System' }}</b> {{ a.action }}</div><span class="when">{{ a.created_at|ago }}</span></li>
+  {% endfor %}</ul>{% else %}<div class="empty">No activity yet.</div>{% endif %}
+</div>
+{% endif %}
+{% endblock %}

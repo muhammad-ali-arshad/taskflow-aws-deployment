@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% from "macros.html" import status_badge, priority_badge, avatar, due %}
+{% block title %}Tasks{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>{{ 'My tasks' if args.get('assignee') == 'me' else 'All tasks' }}</h1>
+    <div class="sub">{{ pagination.total }} task{{ 's' if pagination.total != 1 }} found</div></div>
+  <div class="btn-group">
+    <a class="btn" href="{{ url_for('tasks.export_csv', **args) }}">⭳ Export CSV</a>
+    <a class="btn btn-primary" href="{{ url_for('tasks.create_task') }}">+ New task</a>
+  </div>
+</div>
+
+<form class="filters" method="get" id="filter-form">
+  <input type="search" name="q" placeholder="Search tasks…" value="{{ args.get('q', '') }}">
+  <select name="status" onchange="this.form.submit()">
+    <option value="">Any status</option>
+    <option value="open" {% if args.get('status') == 'open' %}selected{% endif %}>Not done</option>
+    {% for s in STATUSES %}<option {% if args.get('status') == s %}selected{% endif %}>{{ s }}</option>{% endfor %}
+  </select>
+  <select name="priority" onchange="this.form.submit()">
+    <option value="">Any priority</option>
+    {% for p in PRIORITIES %}<option {% if args.get('priority') == p %}selected{% endif %}>{{ p }}</option>{% endfor %}
+  </select>
+  <select name="project" onchange="this.form.submit()">
+    <option value="">All projects</option>
+    {% for p in projects %}<option value="{{ p.id }}" {% if args.get('project') == p.id|string %}selected{% endif %}>{{ p.name }}</option>{% endfor %}
+  </select>
+  <select name="assignee" onchange="this.form.submit()">
+    <option value="">Anyone</option>
+    <option value="me" {% if args.get('assignee') == 'me' %}selected{% endif %}>Assigned to me</option>
+    <option value="none" {% if args.get('assignee') == 'none' %}selected{% endif %}>Unassigned</option>
+  </select>
+  <select name="due" onchange="this.form.submit()">
+    <option value="">Any due date</option>
+    <option value="overdue" {% if args.get('due') == 'overdue' %}selected{% endif %}>Overdue</option>
+    <option value="week" {% if args.get('due') == 'week' %}selected{% endif %}>Due this week</option>
+  </select>
+  <select name="sort" onchange="this.form.submit()">
+    {% for v, l in [('newest','Newest'),('due','Due date'),('priority','Priority'),('title','Title A–Z')] %}
+    <option value="{{ v }}" {% if args.get('sort', 'newest') == v %}selected{% endif %}>Sort: {{ l }}</option>{% endfor %}
+  </select>
+  <button class="btn">Search</button>
+  {% if args %}<a class="small" href="{{ url_for('tasks.list_tasks') }}">Clear filters</a>{% endif %}
+</form>
+
+{% if tasks %}
+<div class="table-wrap"><table class="table">
+  <tr><th>Task</th><th>Project</th><th>Status</th><th>Priority</th><th>Assignee</th><th>Due</th></tr>
+  {% for t in tasks %}
+  <tr>
+    <td><a class="task-title" href="{{ url_for('tasks.view_task', task_id=t.id) }}">{{ t.title }}</a>
+      {% if t.comments %}<span class="muted small"> · 💬 {{ t.comments|length }}</span>{% endif %}</td>
+    <td><span style="display:inline-flex;align-items:center;gap:6px"><span class="dot" style="background:{{ t.project.color }}"></span>{{ t.project.name }}</span></td>
+    <td>{{ status_badge(t.status) }}</td>
+    <td>{{ priority_badge(t.priority) }}</td>
+    <td>{{ avatar(t.assignee, 'avatar-sm') }} <span class="small">{{ t.assignee.display_name if t.assignee else '' }}</span></td>
+    <td>{{ due(t) or '—' }}</td>
+  </tr>
+  {% endfor %}
+</table></div>
+{% if pagination.pages > 1 %}
+<div class="pagination">
+  {% if pagination.has_prev %}<a class="btn btn-sm" href="{{ url_for('tasks.list_tasks', page=pagination.prev_num, **args) }}">← Prev</a>{% endif %}
+  <span class="btn btn-sm" style="cursor:default">Page {{ pagination.page }} of {{ pagination.pages }}</span>
+  {% if pagination.has_next %}<a class="btn btn-sm" href="{{ url_for('tasks.list_tasks', page=pagination.next_num, **args) }}">Next →</a>{% endif %}
+</div>
+{% endif %}
+{% else %}
+<div class="card empty">No tasks match these filters.</div>
+{% endif %}
+{% endblock %}

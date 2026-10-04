@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% from "macros.html" import status_badge, priority_badge, avatar, due %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Hello, {{ current_user.display_name.split()[0] }} 👋</h1>
+    <div class="sub">Here's what's happening across your projects today, {{ today|date('%A, %d %B') }}.</div></div>
+  <div class="btn-group">
+    <a class="btn" href="{{ url_for('projects.create_project') }}">New project</a>
+    <a class="btn btn-primary" href="{{ url_for('tasks.create_task') }}">+ New task</a>
+  </div>
+</div>
+
+<div class="stats">
+  <div class="stat"><div class="label">Active projects</div><div class="value">{{ stats.projects }}</div></div>
+  <div class="stat"><div class="label">Open tasks</div><div class="value">{{ stats.open }}</div></div>
+  <div class="stat"><div class="label">Assigned to me</div><div class="value">{{ stats.mine }}</div></div>
+  <div class="stat"><div class="label">Overdue</div><div class="value {% if stats.overdue %}red{% endif %}">{{ stats.overdue }}</div></div>
+  <div class="stat"><div class="label">Completion rate</div><div class="value green">{{ stats.completion }}%</div></div>
+</div>
+
+<div class="grid grid-main">
+  <div>
+    <div class="card">
+      <div class="card-head"><h2>My open tasks</h2><a class="small" href="{{ url_for('tasks.list_tasks', assignee='me', status='open') }}">View all →</a></div>
+      {% if my_tasks %}
+      <ul class="list">
+        {% for t in my_tasks %}
+        <li>
+          <span class="dot" style="background:{{ t.project.color }}"></span>
+          <div class="grow"><a class="truncate" href="{{ url_for('tasks.view_task', task_id=t.id) }}">{{ t.title }}</a>
+            <div class="muted small">{{ t.project.name }}</div></div>
+          {{ priority_badge(t.priority) }} {{ status_badge(t.status) }} {{ due(t) }}
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}<div class="empty">Nothing assigned to you right now. 🎉</div>{% endif %}
+    </div>
+
+    <div class="grid grid-2" style="margin-top:16px">
+      <div class="card">
+        <h2>Completed this week</h2>
+        <div class="bars">
+          {% for label, count in week %}
+          <div class="col"><b>{{ count }}</b><div class="bar" style="height:{{ (count / week_max * 100)|round }}%"></div><span>{{ label }}</span></div>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="card">
+        <h2>Tasks by status</h2>
+        {% set colors = {'To Do':'#9ca3af','In Progress':'#2563eb','In Review':'#7c3aed','Done':'#059669'} %}
+        {% for s in STATUSES %}{% set c = status_counts.get(s, 0) %}
+        <div class="hbar"><span class="small">{{ s }}</span>
+          <div class="track"><div class="fill" style="width:{{ (c / (stats.total or 1) * 100)|round }}%;background:{{ colors[s] }}"></div></div>
+          <b class="small">{{ c }}</b></div>
+        {% endfor %}
+        <h3 style="margin-top:16px">Open by priority</h3>
+        {% set pcolors = {'Low':'#9ca3af','Medium':'#2563eb','High':'#d97706','Urgent':'#dc2626'} %}
+        {% for p in PRIORITIES|reverse %}{% set c = priority_counts.get(p, 0) %}
+        <div class="hbar"><span class="small">{{ p }}</span>
+          <div class="track"><div class="fill" style="width:{{ (c / (stats.open or 1) * 100)|round }}%;background:{{ pcolors[p] }}"></div></div>
+          <b class="small">{{ c }}</b></div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <div class="card-head"><h2>Project progress</h2><a class="small" href="{{ url_for('projects.list_projects') }}">All projects →</a></div>
+      {% if projects %}
+      <ul class="list">
+        {% for p in projects %}
+        <li>
+          <span class="dot" style="background:{{ p.color }}"></span>
+          <div class="grow"><a href="{{ url_for('projects.view_project', project_id=p.id) }}">{{ p.name }}</a>
+            <div class="progress" style="margin-top:6px"><span style="width:{{ p.progress }}%;background:{{ p.color }}"></span></div></div>
+          <b class="small" style="width:40px;text-align:right">{{ p.progress }}%</b>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}<div class="empty">No projects yet.</div>{% endif %}
+    </div>
+  </div>
+
+  <div>
+    {% if overdue %}
+    <div class="card" style="border-color:#fecaca">
+      <h2 style="color:var(--red)">Overdue</h2>
+      <ul class="list">{% for t in overdue %}
+        <li><div class="grow"><a class="truncate" href="{{ url_for('tasks.view_task', task_id=t.id) }}">{{ t.title }}</a><div class="muted small">{{ t.project.name }}</div></div>{{ due(t) }}</li>
+      {% endfor %}</ul>
+    </div>
+    {% endif %}
+    <div class="card">
+      <h2>Due in the next 7 days</h2>
+      {% if upcoming %}<ul class="list">{% for t in upcoming %}
+        <li><div class="grow"><a class="truncate" href="{{ url_for('tasks.view_task', task_id=t.id) }}">{{ t.title }}</a><div class="muted small">{{ t.project.name }}</div></div>{{ due(t) }}</li>
+      {% endfor %}</ul>{% else %}<div class="empty">Nothing due this week.</div>{% endif %}
+    </div>
+    <div class="card">
+      <h2>Team workload</h2>
+      {% if workload %}{% for u, c in workload %}
+        <div class="hbar" style="grid-template-columns:110px 1fr 24px"><span class="small truncate">{{ u.display_name }}</span>
+          <div class="track"><div class="fill" style="width:{{ (c / workload_max * 100)|round }}%;background:var(--accent)"></div></div><b class="small">{{ c }}</b></div>
+      {% endfor %}{% else %}<div class="empty">No assigned open tasks.</div>{% endif %}
+    </div>
+    <div class="card">
+      <h2>Recent activity</h2>
+      {% if activity %}<ul class="list activity">{% for a in activity %}
+        <li>{{ avatar(a.user, 'avatar-sm') }}<div class="grow"><b>{{ a.user.display_name if a.user else 'System' }}</b> {{ a.action }}</div><span class="when">{{ a.created_at|ago }}</span></li>
+      {% endfor %}</ul>{% else %}<div class="empty">No activity yet.</div>{% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
