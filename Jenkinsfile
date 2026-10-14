@@ -26,7 +26,11 @@ pipeline {
                 deleteDir()
                 checkout scm
                 script {
-                    env.IMAGE_TAG = "taskflow-ci:${env.BUILD_NUMBER}-${env.GIT_COMMIT.take(12)}"
+                    def commitId = sh(
+                        script: 'git rev-parse --short=12 HEAD',
+                        returnStdout: true
+                    ).trim()
+                    env.IMAGE_TAG = "taskflow-ci:${env.BUILD_NUMBER}-${commitId}"
                 }
             }
         }
