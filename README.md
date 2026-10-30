@@ -6,6 +6,8 @@ It runs on **SQLite** on your laptop and on **MySQL** in the cloud: a MySQL serv
 
 > DevOps for Cloud Computing, Assignment 1. Deployment steps are in **[DEPLOYMENT.md](DEPLOYMENT.md)**.
 
+
+
 ## Modules
 
 | # | Module | Features |
