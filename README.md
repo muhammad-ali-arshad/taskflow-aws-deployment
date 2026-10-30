@@ -7,6 +7,7 @@
 
 
 
+
 A multi-user project and task management web app built with **Flask**, **SQLAlchemy** and **JWT authentication**.
 It runs on **SQLite** on your laptop and on **MySQL** in the cloud: a MySQL server on **Amazon EC2** (IaaS), or **Amazon RDS** behind **AWS Elastic Beanstalk** (PaaS).
 
