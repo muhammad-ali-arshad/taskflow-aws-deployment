@@ -135,7 +135,8 @@ pipeline {
         always {
             emailext(
                 recipientProviders: [developers()],
-                from: 'b63256871@gmail.com',
+                // Match the authenticated Gmail SMTP account to avoid sender rewriting or rejection.
+                from: 'sky88111355@gmail.com',
                 subject: "TaskFlow ${currentBuild.currentResult}: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
                 body: "Result: ${currentBuild.currentResult}\nBuild: ${env.BUILD_URL}\nCommit: ${env.GIT_COMMIT ?: 'unknown'}\nImage: ${env.IMAGE_TAG ?: 'not built'}",
                 attachLog: true
