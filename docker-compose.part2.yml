@@ -1,0 +1,55 @@
+name: taskflow-part2
+
+services:
+  database:
+    image: mysql:8.4
+    container_name: taskflow-p2-db
+    environment:
+      MYSQL_DATABASE: taskflow
+      MYSQL_USER: taskflow_app
+      MYSQL_PASSWORD: ${PART2_DB_PASSWORD:?Set PART2_DB_PASSWORD in the external env file}
+      MYSQL_ROOT_PASSWORD: ${PART2_MYSQL_ROOT_PASSWORD:?Set PART2_MYSQL_ROOT_PASSWORD in the external env file}
+    ports:
+      - "3308:3306"
+    volumes:
+      - taskflow_part2_mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    restart: unless-stopped
+
+  app:
+    image: python:3.12-slim
+    container_name: taskflow-p2-app
+    working_dir: /app
+    volumes:
+      - ${TASKFLOW_CODE_DIR:-.}:/app:ro
+    command:
+      - sh
+      - -c
+      - pip install --no-cache-dir -r requirements.txt && exec gunicorn --workers 1 --bind 0.0.0.0:8000 --access-logfile - --error-logfile - application:application
+    depends_on:
+      database:
+        condition: service_healthy
+    environment:
+      SECRET_KEY: ${PART2_SECRET_KEY:?Set PART2_SECRET_KEY in the external env file}
+      DB_HOST: database
+      DB_PORT: "3306"
+      DB_NAME: taskflow
+      DB_USER: taskflow_app
+      DB_PASSWORD: ${PART2_DB_PASSWORD:?Set PART2_DB_PASSWORD in the external env file}
+    ports:
+      - "8082:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=4)"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 45s
+    restart: unless-stopped
+
+volumes:
+  taskflow_part2_mysql_data:

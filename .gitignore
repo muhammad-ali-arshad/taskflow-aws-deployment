@@ -6,3 +6,9 @@ __pycache__/
 .pytest_cache/
 *.zip
 .env
+
+# Local container configuration; commit only sanitized examples
+.env.*
+!.env.example
+!.env.part1.example
+!.env.part2.example

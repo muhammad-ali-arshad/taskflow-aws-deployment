@@ -1,0 +1,42 @@
+name: taskflow-part1
+
+services:
+  db:
+    image: mysql:8.4
+    container_name: taskflow-p1-db
+    environment:
+      MYSQL_DATABASE: taskflow
+      MYSQL_USER: taskflow_app
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?Set MYSQL_PASSWORD in .env}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD in .env}
+    ports:
+      - "3307:3306"
+    volumes:
+      - taskflow_mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    restart: unless-stopped
+
+  app:
+    image: ${DOCKERHUB_USERNAME:?Set DOCKERHUB_USERNAME in .env}/taskflow:part1
+    container_name: taskflow-p1-app
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SECRET_KEY: ${SECRET_KEY:?Set SECRET_KEY in .env}
+      DB_HOST: db
+      DB_PORT: "3306"
+      DB_NAME: taskflow
+      DB_USER: taskflow_app
+      DB_PASSWORD: ${MYSQL_PASSWORD:?Set MYSQL_PASSWORD in .env}
+    ports:
+      - "8081:8000"
+    restart: unless-stopped
+
+volumes:
+  taskflow_mysql_data:
