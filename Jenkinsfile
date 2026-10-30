@@ -117,7 +117,7 @@ pipeline {
                         --env-file "$PART2_ENV_FILE" \
                         --project-name taskflow-part2 \
                         --file "$WORKSPACE/$PART2_COMPOSE_FILE" \
-                        up -d --force-recreate
+                        up -d
 
                     for attempt in $(seq 1 40); do
                         if curl --fail --silent --show-error http://127.0.0.1:8082/health; then
