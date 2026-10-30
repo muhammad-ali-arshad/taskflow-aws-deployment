@@ -37,20 +37,20 @@ pipeline {
         }
 
         stage('Test inside Docker') {
-            agent {
-                docker {
-                    image 'python:3.12-slim'
-                    reuseNode true
-                }
-            }
             steps {
-                sh '''
-                    set -eu
-                    python -m venv /tmp/taskflow-ci-venv
-                    /tmp/taskflow-ci-venv/bin/python -m pip install --no-cache-dir -r requirements-dev.txt
-                    mkdir -p reports
-                    /tmp/taskflow-ci-venv/bin/python -m pytest -q -p no:cacheprovider --junitxml=reports/pytest.xml
-                '''
+                script {
+                    def uid = sh(script: 'id -u', returnStdout: true).trim()
+                    def gid = sh(script: 'id -g', returnStdout: true).trim()
+                    docker.image('python:3.12-slim').withRun(
+                        "-t --user ${uid}:${gid} -v ${env.WORKSPACE}:/workspace:rw,z -w /workspace",
+                        'cat'
+                    ) { testContainer ->
+                        sh """
+                            set -eu
+                            docker exec ${testContainer.id} sh -lc 'set -eu; python -m venv /tmp/taskflow-ci-venv; /tmp/taskflow-ci-venv/bin/python -m pip install --no-cache-dir -r requirements-dev.txt; mkdir -p reports; /tmp/taskflow-ci-venv/bin/python -m pytest -q -p no:cacheprovider --junitxml=reports/pytest.xml'
+                        """
+                    }
+                }
             }
             post {
                 always {
