@@ -12,11 +12,6 @@ pipeline {
 
     triggers { githubPush() }
 
-    parameters {
-        string(name: 'NOTIFY_EMAIL', defaultValue: '',
-               description: 'Optional: your email address. Configure SMTP before enabling.')
-    }
-
     environment {
         PYTHONDONTWRITEBYTECODE = '1'
         PART2_CODE_DIR = '/var/lib/jenkins/taskflow-part2-code'
@@ -140,10 +135,11 @@ pipeline {
     post {
         always {
             script {
-                def recipient = params.NOTIFY_EMAIL?.trim() ?: env.COMMIT_AUTHOR_EMAIL?.trim()
+                def recipient = env.COMMIT_AUTHOR_EMAIL?.trim()
                 if (recipient) {
                     emailext(
                         to: recipient,
+                        from: 'b63256871@gmail.com',
                         subject: "TaskFlow ${currentBuild.currentResult}: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
                         body: "Result: ${currentBuild.currentResult}\nBuild: ${env.BUILD_URL}\nCommit: ${env.GIT_COMMIT ?: 'unknown'}\nImage: ${env.IMAGE_TAG ?: 'not built'}",
                         attachLog: true
