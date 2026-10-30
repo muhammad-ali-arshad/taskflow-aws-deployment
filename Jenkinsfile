@@ -41,14 +41,25 @@ pipeline {
                 script {
                     def uid = sh(script: 'id -u', returnStdout: true).trim()
                     def gid = sh(script: 'id -g', returnStdout: true).trim()
+                    sh 'mkdir -p reports'
                     docker.image('python:3.12-slim').withRun(
-                        "-t --user ${uid}:${gid} -v ${env.WORKSPACE}:/workspace:rw,z -w /workspace",
+                        "-t --user ${uid}:${gid} --env PYTHONDONTWRITEBYTECODE=1 -v ${env.WORKSPACE}:/workspace:rw,z -w /workspace",
                         'cat'
                     ) { testContainer ->
-                        sh """
-                            set -eu
-                            docker exec ${testContainer.id} sh -lc 'set -eu; python -m venv /tmp/taskflow-ci-venv; /tmp/taskflow-ci-venv/bin/python -m pip install --no-cache-dir -r requirements-dev.txt; mkdir -p reports; /tmp/taskflow-ci-venv/bin/python -m pytest -q -p no:cacheprovider --junitxml=reports/pytest.xml'
-                        """
+                        def testStatus = sh(
+                            script: "docker exec ${testContainer.id} sh -lc 'set -eu; python -m venv /tmp/taskflow-ci-venv; /tmp/taskflow-ci-venv/bin/python -m pip install --no-cache-dir -r requirements-dev.txt; /tmp/taskflow-ci-venv/bin/python -m pytest -q -p no:cacheprovider --junitxml=/tmp/pytest.xml'",
+                            returnStatus: true
+                        )
+                        def reportStatus = sh(
+                            script: "docker cp ${testContainer.id}:/tmp/pytest.xml reports/pytest.xml",
+                            returnStatus: true
+                        )
+                        if (testStatus != 0) {
+                            error("Containerized tests failed with exit code ${testStatus}.")
+                        }
+                        if (reportStatus != 0) {
+                            error('Could not copy the JUnit report out of the test container.')
+                        }
                     }
                 }
             }
