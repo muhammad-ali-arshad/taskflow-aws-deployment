@@ -138,15 +138,13 @@ pipeline {
 
     post {
         always {
-            script {
-                if (params.NOTIFY_EMAIL?.trim()) {
-                    emailext(
-                        to: params.NOTIFY_EMAIL.trim(),
-                        subject: "TaskFlow ${currentBuild.currentResult}: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                        body: "Result: ${currentBuild.currentResult}\nBuild: ${env.BUILD_URL}\nImage: ${env.IMAGE_TAG ?: 'not built'}"
-                    )
-                }
-            }
+            emailext(
+                to: params.NOTIFY_EMAIL?.trim() ?: '',
+                recipientProviders: [developers()],
+                subject: "TaskFlow ${currentBuild.currentResult}: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                body: "Result: ${currentBuild.currentResult}\nBuild: ${env.BUILD_URL}\nCommit: ${env.GIT_COMMIT ?: 'unknown'}\nImage: ${env.IMAGE_TAG ?: 'not built'}",
+                attachLog: true
+            )
         }
         cleanup {
             sh 'if [ -n "${IMAGE_TAG:-}" ]; then docker image rm "$IMAGE_TAG" || true; fi'
