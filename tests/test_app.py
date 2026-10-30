@@ -235,3 +235,7 @@ def test_health_endpoint(client):
 
 def test_404_page(client):
     assert client.get("/does-not-exist").status_code == 404
+
+
+
+
