@@ -26,7 +26,6 @@ pipeline {
                 checkout scm
                 script {
                     def commitId = sh(script: 'git rev-parse --short=12 HEAD', returnStdout: true).trim()
-                    env.COMMIT_AUTHOR_EMAIL = sh(script: 'git log -1 --format=%ae', returnStdout: true).trim()
                     env.IMAGE_TAG = "taskflow-ci:${env.BUILD_NUMBER}-${commitId}"
                 }
             }
@@ -134,20 +133,13 @@ pipeline {
 
     post {
         always {
-            script {
-                def recipient = env.COMMIT_AUTHOR_EMAIL?.trim()
-                if (recipient) {
-                    emailext(
-                        to: recipient,
-                        from: 'b63256871@gmail.com',
-                        subject: "TaskFlow ${currentBuild.currentResult}: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                        body: "Result: ${currentBuild.currentResult}\nBuild: ${env.BUILD_URL}\nCommit: ${env.GIT_COMMIT ?: 'unknown'}\nImage: ${env.IMAGE_TAG ?: 'not built'}",
-                        attachLog: true
-                    )
-                } else {
-                    echo 'Email notification skipped: the commit has no author email.'
-                }
-            }
+            emailext(
+                recipientProviders: [developers()],
+                from: 'b63256871@gmail.com',
+                subject: "TaskFlow ${currentBuild.currentResult}: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                body: "Result: ${currentBuild.currentResult}\nBuild: ${env.BUILD_URL}\nCommit: ${env.GIT_COMMIT ?: 'unknown'}\nImage: ${env.IMAGE_TAG ?: 'not built'}",
+                attachLog: true
+            )
         }
         cleanup {
             sh 'if [ -n "${IMAGE_TAG:-}" ]; then docker image rm "$IMAGE_TAG" || true; fi'
