@@ -6,7 +6,7 @@ Beanstalk on Linux needs; Windows' "Compress" sometimes gets this wrong.)
 """
 import os
 import zipfile
-
+# cheese
 EXCLUDE_DIRS = {".venv", "venv", "__pycache__", ".pytest_cache", "tests", "_old_version", ".git"}
 EXCLUDE_EXT = {".pyc", ".db", ".zip"}
 EXCLUDE_FILES = {".env"}
